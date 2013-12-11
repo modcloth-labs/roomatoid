@@ -42,14 +42,9 @@ class Roomatoid < Sinatra::Base
   end
 
   get "/" do
-    results = client.execute(:api_method => calendar.events.list,
-                              :parameters => {'calendarId' => 'primary'},
+    results = client.execute(:api_method => calendar.calendar_list.list,
                               :authorization => client.authorization.dup)
-    puts results.class
-    puts results.methods.sort.inspect
-    puts results.data.class
-    puts results.data.methods.sort.inspect
-    @data = results.data.to_json
+    @conference_rooms = results.data.items.select { |i| i.summary.include? "Conf" }
     erb :index
   end
 end

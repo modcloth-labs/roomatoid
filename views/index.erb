@@ -1,2 +1,5 @@
-Hello, world
-<%= @data %>
+<ul>
+  <% @conference_rooms.each do |room| %>
+    <li><%= room.summary %></li>
+  <% end %>
+</ul>
