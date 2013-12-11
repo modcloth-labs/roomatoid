@@ -72,22 +72,25 @@ class Roomatoid < Sinatra::Base
     @conference_rooms = calendar_list.data.items.select { |i| i.summary.include? "Conf" }
     @events_per_room = {}
     @conference_rooms.each do |room|
+      # showDeleted => true?!?!?!?!  For *some* reason, this is how I exclude cancelled events from the results.  *shrug*
       events = client.execute(
         :api_method => calendar.events.list,
-        :parameters => { 'calendarId' => room.id, 'timeMin' => Date.today.rfc3339, 'timeMax' => Date.today.next.rfc3339, 'showDeleted' => true }
+        :parameters => {
+          'calendarId' => room.id,
+          'timeMin' => Date.today.rfc3339,
+          'timeMax' => Date.today.next.rfc3339,
+          'singleEvents' => true,
+          'showDeleted' => false,
+          'orderBy' => 'startTime'
+        }
       ).data.items
+      @events = []
       events.each do |event|
-        begin
-          duration = event.end.date_time - event.start.date_time
-        rescue Exception => e
-          puts "Booo"
-          puts "event is #{event.to_json}"
-        end
-        puts "duration for event #{event.summary} is #{duration}"
+        duration = event.end.date_time - event.start.date_time
+        @events << { start: event.start.date_time, end: event.end.date_time, duration: duration, summary: event.summary || "PRIVATE" }
       end
-      #@events_per_room[room.id] = client.execute(
+      @events_per_room[room.summary] = @events
     end
-    #puts @events_per_room
     erb :index
   end
 end

@@ -1,5 +1,10 @@
 <ul>
-  <% @conference_rooms.each do |room| %>
-    <li><%= room.summary %></li>
+  <% @events_per_room.keys.each do |room| %>
+    <li><%= room %></li>
+    <ul>
+      <% @events_per_room[room].each do |event| %>
+        <li><%= event %></li>
+      <%end%>
+    </ul>
   <% end %>
 </ul>
