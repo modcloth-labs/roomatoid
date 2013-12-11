@@ -67,9 +67,27 @@ class Roomatoid < Sinatra::Base
   end
 
   get "/" do
-    results = client.execute(:api_method => calendar.calendar_list.list,
+    calendar_list = client.execute(:api_method => calendar.calendar_list.list,
                               :authorization => user_credentials)
-    @conference_rooms = results.data.items.select { |i| i.summary.include? "Conf" }
+    @conference_rooms = calendar_list.data.items.select { |i| i.summary.include? "Conf" }
+    @events_per_room = {}
+    @conference_rooms.each do |room|
+      events = client.execute(
+        :api_method => calendar.events.list,
+        :parameters => { 'calendarId' => room.id, 'timeMin' => Date.today.rfc3339, 'timeMax' => Date.today.next.rfc3339, 'showDeleted' => true }
+      ).data.items
+      events.each do |event|
+        begin
+          duration = event.end.date_time - event.start.date_time
+        rescue Exception => e
+          puts "Booo"
+          puts "event is #{event.to_json}"
+        end
+        puts "duration for event #{event.summary} is #{duration}"
+      end
+      #@events_per_room[room.id] = client.execute(
+    end
+    #puts @events_per_room
     erb :index
   end
 end
