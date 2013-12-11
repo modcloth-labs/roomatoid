@@ -42,9 +42,14 @@ class Roomatoid < Sinatra::Base
   end
 
   get "/" do
-    @results = client.execute(:api_method => calendar.events.list,
+    results = client.execute(:api_method => calendar.events.list,
                               :parameters => {'calendarId' => 'primary'},
                               :authorization => client.authorization.dup)
+    puts results.class
+    puts results.methods.sort.inspect
+    puts results.data.class
+    puts results.data.methods.sort.inspect
+    @data = results.data.to_json
     erb :index
   end
 end
