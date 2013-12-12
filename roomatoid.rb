@@ -68,11 +68,10 @@ class Roomatoid < Sinatra::Base
 
   get "/" do
     calendar_list = client.execute(:api_method => calendar.calendar_list.list,
-                              :authorization => user_credentials)
+                                   :authorization => user_credentials)
     @conference_rooms = calendar_list.data.items.select { |i| i.summary.include? "Conf" }
     @events_per_room = {}
     @conference_rooms.each do |room|
-      # showDeleted => true?!?!?!?!  For *some* reason, this is how I exclude cancelled events from the results.  *shrug*
       events = client.execute(
         :api_method => calendar.events.list,
         :parameters => {
@@ -91,6 +90,7 @@ class Roomatoid < Sinatra::Base
       end
       @events_per_room[room.summary] = @events
     end
+    @events_per_room = @events_per_room.to_json
     erb :index
   end
 end

@@ -1,10 +1,83 @@
-<ul>
-  <% @events_per_room.keys.each do |room| %>
-    <li><%= room %></li>
-    <ul>
-      <% @events_per_room[room].each do |event| %>
-        <li><%= event %></li>
-      <%end%>
-    </ul>
-  <% end %>
-</ul>
+<html>
+  <head>
+    <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="/javascript/timeline/timeline.js"></script>
+    <script type="text/javascript" src="/javascript/tooltip/tooltip.js"></script>
+    <link rel="stylesheet" type="text/css" href="/javascript/timeline/timeline.css">
+    <link rel="stylesheet" type="text/css" href="/javascript/tooltip/tooltip.css">
+
+    <script type="text/javascript">
+      var data = undefined;
+      var timeline = undefined;
+
+      google.load("visualization", "1");
+
+      google.setOnLoadCallback(drawVisualization);
+
+      function drawVisualization() {
+        data = new google.visualization.DataTable();
+        data.addColumn('datetime', 'start');
+        data.addColumn('datetime', 'end');
+        data.addColumn('string', 'content');
+        data.addColumn('string', 'group');
+        data.addColumn('string', 'className');
+
+        var roomData = <%= @events_per_room %>;
+        for (var roomName in roomData) {
+          for (n = 0; n < roomData[roomName].length; n++) {
+            var start = new Date(roomData[roomName][n].start);
+            var end = new Date(roomData[roomName][n].end);
+            var content = roomData[roomName][n].summary;
+            data.addRow([start, end, content, roomName, roomName.toLowerCase()]);
+          }
+        }
+
+        var min = new Date();
+        min.setHours(0,0,0,0);
+
+        var max = new Date();
+        max.setHours(23,59,59,999);
+
+        var options = {
+            width:  "100%",
+            height: "99%",
+            layout: "box",
+            axisOnTop: true,
+            eventMargin: 10,
+            eventMarginAxis: 0,
+            editable: false,
+            showNavigation: false,
+            min: min,
+            max: max,
+            zoomMin: 3000000
+        };
+
+        timeline = new links.Timeline(document.getElementById('roomtimeline'));
+
+        google.visualization.events.addListener(timeline, 'select', onSelect);
+
+        var now = new Date();
+        timeline.draw(data, options);
+
+        var start = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+        var end = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+        timeline.setVisibleChartRange(start, end);
+      }
+
+      function onSelect() {
+        var row = undefined;
+        var sel = timeline.getSelection();
+        if (sel.length) {
+          if (sel[0].row != undefined) {
+            row = sel[0].row;
+          }
+        }
+        tooltip.pop(row, '<span class=\'red\'>Hi</span> there');
+        console.log(row);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="roomtimeline"></div>
+  </body>
+</html>
