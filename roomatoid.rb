@@ -69,6 +69,8 @@ class Roomatoid < Sinatra::Base
   get "/" do
     calendar_list = client.execute(:api_method => calendar.calendar_list.list,
                                    :authorization => user_credentials)
+    color_list = client.execute(:api_method => calendar.colors.get,
+                                :authorization => user_credentials)
     @conference_rooms = calendar_list.data.items.select { |i| i.summary.include? "Conf" }
     @events_per_room = {}
     @conference_rooms.each do |room|
@@ -86,10 +88,33 @@ class Roomatoid < Sinatra::Base
       @events = []
       events.each do |event|
         duration = event.end.date_time - event.start.date_time
-        @events << { start: event.start.date_time, end: event.end.date_time, duration: duration, summary: event.summary || "PRIVATE" }
+        attendees = event.attendees.select { |at|
+          begin
+            !at.displayName.include? "_Conf_"
+          rescue => e
+            false
+          end
+        }.map { |at|
+          begin
+            at.displayName
+          rescue => e
+            "UNKNOWN"
+          end
+        }
+        @events << { 
+          start: event.start.date_time,
+          end: event.end.date_time,
+          duration: duration,
+          background_color: room.backgroundColor,
+          color_id: room.colorId,
+          creator: event.creator ? event.creator.email : "UNKNOWN",
+          organizer: event.organizer ? event.organizer.displayName : "UNKNOWN",
+          attendees: attendees.sort,
+          summary: event.summary || "PRIVATE" }
       end
       @events_per_room[room.summary] = @events
     end
+    @color_list = color_list.data.to_hash.to_json
     @events_per_room = @events_per_room.to_json
     erb :index
   end

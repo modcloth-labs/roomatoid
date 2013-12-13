@@ -10,6 +10,7 @@
       var data = undefined;
       var timeline = undefined;
 
+      google.load('jquery', '1.3.1');
       google.load("visualization", "1");
 
       google.setOnLoadCallback(drawVisualization);
@@ -27,8 +28,10 @@
           for (n = 0; n < roomData[roomName].length; n++) {
             var start = new Date(roomData[roomName][n].start);
             var end = new Date(roomData[roomName][n].end);
-            var content = roomData[roomName][n].summary;
-            data.addRow([start, end, content, roomName, roomName.toLowerCase()]);
+            var roomSummary = roomData[roomName][n].summary;
+            var content = roomSummary;
+            var className = 'room' + roomData[roomName][n].color_id;
+            data.addRow([start, end, content, roomName, className]);
           }
         }
 
@@ -62,18 +65,35 @@
         var start = new Date(now.getTime() - 4 * 60 * 60 * 1000);
         var end = new Date(now.getTime() + 8 * 60 * 60 * 1000);
         timeline.setVisibleChartRange(start, end);
+        var color_list = <%= @color_list %>;
+        for (var color_id in color_list.calendar) {
+          $('.room' + color_id).css({backgroundColor:color_list.calendar[color_id].background});
+        }
       }
 
       function onSelect() {
         var row = undefined;
         var sel = timeline.getSelection();
+        var el = $('.timeline-event-selected');
         if (sel.length) {
           if (sel[0].row != undefined) {
             row = sel[0].row;
           }
         }
-        tooltip.pop(row, '<span class=\'red\'>Hi</span> there');
-        console.log(row);
+        var roomEvents = <%= @events_per_room %>;
+        var eventInfo = timeline.getItem(row);
+        var roomData = roomEvents[eventInfo.group];
+        var ttContent = undefined;
+        for (var i in roomData) {
+          if (roomData[i].summary == eventInfo.content) {
+            ttContent = ["<b>Description</b>: " + roomData[i].summary,
+                         "<b>Creator</b>: " + roomData[i].creator,
+                         "<b>Organizer</b>:" + roomData[i].organizer,
+                         "<b>Attendees</b>:" + roomData[i].attendees.join(", ")
+                        ].join("<br>");
+          }
+        }
+        tooltip.pop(el[0], ttContent);
       }
     </script>
   </head>
